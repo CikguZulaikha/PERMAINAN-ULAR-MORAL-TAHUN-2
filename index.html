@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Permainan Ular Moral Tahun 2</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Font: Fredoka / Press Start 2P -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Fredoka', sans-serif;
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%);
+            min-height: 100vh;
+            touch-action: manipulation;
+        }
+        .pixel-font {
+            font-family: 'Press Start 2P', cursive;
+        }
+        .arcade-card {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border: 4px solid #facc15;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(250, 204, 21, 0.4);
+        }
+        .arcade-btn {
+            transition: transform 0.1s, box-shadow 0.1s;
+            box-shadow: 0 5px 0 #1e293b;
+        }
+        .arcade-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #1e293b;
+        }
+        canvas {
+            image-rendering: pixelated;
+            background-color: #0f172a;
+            border: 4px solid #38bdf8;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8), 0 0 15px rgba(56, 189, 248, 0.5);
+        }
+        /* Custom Scrollbar for Leaderboard */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #facc15;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen text-white justify-between items-center p-2 sm:p-4 select-none">
+
+    <!-- Header Section -->
+    <header class="w-full max-w-lg text-center mb-2">
+        <h1 class="text-2xl sm:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-pink-400 to-cyan-300 drop-shadow-md">
+            🐍 ULAR MORAL TAHUN 2 🌟
+        </h1>
+        <p class="text-xs sm:text-sm text-cyan-200 mt-1 font-medium">
+            Kumpul Bintang Moral & Jawab Soalan Pendidikan Moral!
+        </p>
+    </header>
+
+    <!-- Main Container -->
+    <main class="w-full max-w-lg flex-1 flex flex-col items-center justify-center relative">
+
+        <!-- SCREEN 1: PLAYER NAME ENTER -->
+        <div id="nameScreen" class="w-full arcade-card rounded-2xl p-6 text-center space-y-5 my-auto">
+            <div class="text-5xl animate-bounce">🎮</div>
+            <h2 class="text-xl sm:text-2xl font-bold text-yellow-300">Selamat Datang, Pemain!</h2>
+            <p class="text-sm text-slate-300">Sila masukkan nama anda sebelum memulakan permainan:</p>
+            
+            <form id="nameForm" onsubmit="savePlayerName(event)" class="space-y-4">
+                <input type="text" id="playerNameInput" required maxlength="12" 
+                    placeholder="Nama Anda (Cth: Amir)" 
+                    class="w-full px-4 py-3 rounded-xl bg-slate-800 border-2 border-pink-500 text-center text-lg text-yellow-300 font-bold focus:outline-none focus:border-yellow-400 shadow-inner">
+                
+                <button type="submit" 
+                    class="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-slate-950 font-extrabold text-lg rounded-xl arcade-btn uppercase tracking-wider">
+                    <i class="fa-solid fa-play mr-2"></i> Mula Permainan
+                </button>
+            </form>
+
+            <div class="pt-2">
+                <button onclick="showLeaderboardModal()" class="text-xs text-cyan-300 hover:underline">
+                    <i class="fa-solid fa-trophy text-yellow-400 mr-1"></i> Lihat Papan Skor Tertinggi
+                </button>
+            </div>
+        </div>
+
+        <!-- SCREEN 2: GAMEPLAY SCREEN -->
+        <div id="gameScreen" class="w-full flex-col items-center hidden">
+            
+            <!-- Dashboard Info -->
+            <div class="w-full bg-slate-900/90 border-2 border-cyan-400 rounded-xl p-3 mb-2 flex justify-between items-center text-sm shadow-md">
+                <div class="flex items-center space-x-1">
+                    <span class="text-slate-400 text-xs">Pemain:</span>
+                    <span id="displayName" class="font-bold text-yellow-300 truncate max-w-[90px]"></span>
+                </div>
+                <div class="flex items-center space-x-1">
+                    <span class="text-red-400">❤️</span>
+                    <span id="livesDisplay" class="font-bold text-red-400 text-base">3</span>
+                </div>
+                <div class="flex items-center space-x-1">
+                    <span class="text-yellow-400">⭐</span>
+                    <span id="scoreDisplay" class="font-bold text-yellow-300 text-base">0</span>
+                </div>
+                <!-- Audio Controls -->
+                <div class="flex space-x-2">
+                    <button id="bgmBtn" onclick="toggleBGM()" class="text-slate-300 hover:text-yellow-300 text-base">
+                        <i class="fa-solid fa-music"></i>
+                    </button>
+                    <button id="sfxBtn" onclick="toggleSFX()" class="text-slate-300 hover:text-yellow-300 text-base">
+                        <i class="fa-solid fa-volume-high"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Canvas Container -->
+            <div class="relative w-full aspect-square max-w-[400px]">
+                <canvas id="gameCanvas" class="w-full h-full rounded-xl"></canvas>
+                
+                <!-- Pause Overlay -->
+                <div id="pauseOverlay" class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm rounded-xl flex flex-col justify-center items-center hidden">
+                    <h2 class="text-2xl font-bold text-yellow-300 mb-4">DIPAUSKAN</h2>
+                    <button onclick="togglePause()" class="px-6 py-2 bg-green-500 text-slate-950 font-bold rounded-lg arcade-btn">
+                        Sambung
+                    </button>
+                </div>
+            </div>
+
+            <!-- Touch Controls (Mobile) -->
+            <div class="w-full max-w-[320px] mt-3 grid grid-cols-3 gap-2 justify-items-center sm:hidden">
+                <div></div>
+                <button onclick="changeDirection('UP')" class="w-14 h-14 bg-gradient-to-b from-cyan-400 to-blue-600 rounded-2xl flex items-center justify-center text-2xl active:scale-95 shadow-lg border-2 border-cyan-200">
+                    ⬆️
+                </button>
+                <div></div>
+                <button onclick="changeDirection('LEFT')" class="w-14 h-14 bg-gradient-to-b from-cyan-400 to-blue-600 rounded-2xl flex items-center justify-center text-2xl active:scale-95 shadow-lg border-2 border-cyan-200">
+                    ⬅️
+                </button>
+                <button onclick="togglePause()" class="w-12 h-12 bg-slate-700 rounded-full flex items-center justify-center text-xs font-bold text-yellow-300 border border-slate-500 self-center">
+                    ⏸️
+                </button>
+                <button onclick="changeDirection('RIGHT')" class="w-14 h-14 bg-gradient-to-b from-cyan-400 to-blue-600 rounded-2xl flex items-center justify-center text-2xl active:scale-95 shadow-lg border-2 border-cyan-200">
+                    ➡️
+                </button>
+                <div></div>
+                <button onclick="changeDirection('DOWN')" class="w-14 h-14 bg-gradient-to-b from-cyan-400 to-blue-600 rounded-2xl flex items-center justify-center text-2xl active:scale-95 shadow-lg border-2 border-cyan-200">
+                    ⬇️
+                </button>
+                <div></div>
+            </div>
+
+            <div class="mt-2 text-xs text-slate-400 text-center hidden sm:block">
+                Gunakan kekunci anak panah <kbd class="px-1 bg-slate-800 rounded">⬆️</kbd> <kbd class="px-1 bg-slate-800 rounded">⬇️</kbd> <kbd class="px-1 bg-slate-800 rounded">⬅️</kbd> <kbd class="px-1 bg-slate-800 rounded">➡️</kbd> atau <kbd class="px-1 bg-slate-800 rounded">WASD</kbd>
+            </div>
+        </div>
+    </main>
+
+    <!-- MODAL 1: QUESTION MODAL -->
+    <div id="questionModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
+        <div class="arcade-card w-full max-w-md rounded-2xl p-5 space-y-4 text-center border-4 border-yellow-400">
+            <div class="inline-block px-3 py-1 bg-yellow-400 text-slate-950 font-extrabold text-xs rounded-full uppercase tracking-wide">
+                Soalan Pendidikan Moral
+            </div>
+            
+            <h3 id="questionText" class="text-base sm:text-lg font-bold text-white leading-snug">
+                <!-- Question will appear here -->
+            </h3>
+
+            <div id="optionsContainer" class="space-y-2 text-left">
+                <!-- Options will be injected here -->
+            </div>
+
+            <!-- Feedback Display -->
+            <div id="feedbackBox" class="hidden p-3 rounded-xl text-sm font-bold"></div>
+
+            <button id="nextQuestionBtn" onclick="resumeAfterQuestion()" class="w-full py-2 bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-bold rounded-xl hidden arcade-btn">
+                Teruskan Permainan ➡️
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL 2: GAME OVER / SCOREBOARD MODAL -->
+    <div id="gameOverModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
+        <div class="arcade-card w-full max-w-md rounded-2xl p-6 text-center space-y-4 border-4 border-red-500">
+            <h2 id="gameOverTitle" class="text-2xl sm:text-3xl font-extrabold text-red-400">
+                TAMAT PERMAINAN!
+            </h2>
+            
+            <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-700 space-y-2">
+                <p class="text-sm text-slate-300">Pemain: <span id="finalPlayerName" class="font-bold text-yellow-300"></span></p>
+                <p class="text-lg text-slate-200">Markah Akhir: <span id="finalScore" class="text-3xl font-extrabold text-yellow-400">0</span></p>
+            </div>
+
+            <!-- Mini Leaderboard -->
+            <div class="text-left">
+                <h4 class="text-xs font-bold text-yellow-300 mb-2 flex items-center justify-between">
+                    <span>🏆 PAPAN SKOR TERTINGGI</span>
+                    <i class="fa-solid fa-trophy text-yellow-400"></i>
+                </h4>
+                <div id="leaderboardList" class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1 text-xs max-h-36 overflow-y-auto">
+                    <!-- Leaderboard entries -->
+                </div>
+            </div>
+
+            <div class="flex gap-2">
+                <button onclick="restartGame()" class="flex-1 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 text-slate-950 font-bold rounded-xl arcade-btn text-sm">
+                    🔄 Main Lagi
+                </button>
+                <button onclick="changePlayer()" class="flex-1 py-3 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-xl arcade-btn text-sm">
+                    👤 Tukar Pemain
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: LEADERBOARD ONLY MODAL -->
+    <div id="leaderboardModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
+        <div class="arcade-card w-full max-w-md rounded-2xl p-6 text-center space-y-4 border-4 border-yellow-400">
+            <h2 class="text-xl sm:text-2xl font-extrabold text-yellow-300 flex items-center justify-center gap-2">
+                🏆 PAPAN SKOR TERTINGGI
+            </h2>
+
+            <div id="leaderboardModalList" class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-2 text-sm max-h-60 overflow-y-auto text-left">
+                <!-- Leaderboard entries -->
+            </div>
+
+            <button onclick="hideLeaderboardModal()" class="w-full py-2 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-xl arcade-btn">
+                Tutup
+            </button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="w-full text-center py-2 text-xs text-slate-400 font-medium">
+        Hak Cipta © Oleh Cikgu Zulaikha
+    </footer>
+
+    <!-- GAME LOGIC SCRIPT -->
+    <script>
+        // --- 30 DSKP PENDIDIKAN MORAL TAHUN 2 QUESTIONS ---
+        const moralQuestions = [
+            { q: "Apakah pegangan agama utama di Malaysia yang mengajarkan kebaikan?", options: ["Islam", "Suka bergaduh", "Mencuri"], answer: 0 },
+            { q: "Mengapa kita perlu menghormati amalan agama jiran?", options: ["Supaya hidup tenteram", "Mendapat wang", "Dapat dipuji"], answer: 0 },
+            { q: "Apakah sikap yang baik apabila jiran mengadakan sambutan perayaan?", options: ["Membuat bising", "Mengucapkan selamat dan menghormati", "Merosakkan hiasan"], answer: 1 },
+            { q: "Apakah bentuk bantuan yang boleh diberikan kepada jiran yang mengalami kesusahan?", options: ["Mentertawakan mereka", "Menolong mengikut kemampuan", "Pura-pura tidak tahu"], answer: 1 },
+            { q: "Mengapa kita patut membantu jiran yang memerlukan?", options: ["Memupuk semangat bermasyarakat", "Supaya jiran takut", "Agar dapat hadiah"], answer: 0 },
+            { q: "Apakah tanggungjawab kita terhadap kebersihan kawasan kediaman jiran?", options: ["Membuang sampah ke rumah jiran", "Menjaga kebersihan bersama", "Biar jiran bersihkan"], answer: 1 },
+            { q: "Bagaimanakah cara menghargai sumbangan jiran?", options: ["Mengucapkan terima kasih", "Abaikan jiran", "Ejek sumbangan mereka"], answer: 0 },
+            { q: "Apakah kesan jika kita berterima kasih kepada jiran?", options: ["Mengeratkan hubungan", "Menimbulkan perbalahan", "Membuat jiran marah"], answer: 0 },
+            { q: "Bagaimanakah cara bersikap mulia terhadap jiran?", options: ["Bercakap sopan dan senyum", "Bercakap kasar", "Memanggil nama gelaran buruk"], answer: 0 },
+            { q: "Apakah tingkah laku berhemah tinggi semasa berkomunikasi dengan jiran?", options: ["Tinggi suara", "Menggunakan bahasa yang lembut", "Menyampuk percakapan"], answer: 1 },
+            { q: "Mengapa kita perlu menghormati hak jiran?", options: ["Supaya tiada perselisihan faham", "Agar kita dipuji hebat", "Supaya jiran bagi hadiah"], answer: 0 },
+            { q: "Apakah contoh menghormati hak privasi jiran?", options: ["Mengintai rumah jiran", "Tidak menceroboh kawasan rumah jiran", "Mengambil barang tanpa izin"], answer: 1 },
+            { q: "Apakah tindakan jujur apabila menjumpai barang jiran yang cicir?", options: ["Simpan sendiri", "Pulangkan semula kepada jiran", "Buang ke dalam tong sampah"], answer: 1 },
+            { q: "Mengapa sikap jujur amat penting dalam hubungan kejiranan?", options: ["Membina kepercayaan", "Membuatkan jiran benci", "Supaya dapat ganjaran"], answer: 0 },
+            { q: "Apakah tindakan rajin yang boleh dilakukan di kawasan jiran?", options: ["Tidur sepanjang hari", "Sama-sama bergotong-royong", "Melihat sahaja orang bekerja"], answer: 1 },
+            { q: "Apakah faedah bersikap rajin dalam aktiviti kejiranan?", options: ["Kawasan kejiranan bersih dan ceria", "Kawasan menjadi kotor", "Badan menjadi sakit"], answer: 0 },
+            { q: "Bagaimanakah sikap bekerjasama ditunjukkan bersama jiran?", options: ["Bantu membersihkan balai raya", "Enggan membantu", "Mengacau jiran bekerja"], answer: 0 },
+            { q: "Apakah kebaikan bekerjasama dengan jiran?", options: ["Pekerjaan berat menjadi ringan", "Kerja lambat siap", "Menambah pergaduhan"], answer: 0 },
+            { q: "Bagaimanakah bersikap adil terhadap jiran?", options: ["Membahagi makanan secara sama rata", "Mengecualikan jiran tertentu", "Pilih kasih"], answer: 0 },
+            { q: "Mengapa kita perlu adil semasa bermain bersama anak-anak jiran?", options: ["Mengelakkan rasa tidak puas hati", "Supaya kita selalu menang", "Supaya lawan menangis"], answer: 0 },
+            { q: "Apakah tindakan berani yang betul untuk keselamatan jiran?", options: ["Melaporkan kejadian mencurigakan kepada orang dewasa", "Lari dan diamkan diri", "Ikut penjahat"], answer: 0 },
+            { q: "Apakah cara menunjukkan kasih sayang terhadap jiran?", options: ["Mengambil berat keselamatan dan kebajikan jiran", "Mengacau ketenteraman jiran", "Bercakap bohong"], answer: 0 },
+            { q: "Bagaimanakah tindakan bertoleransi semasa jiran mengadakan majlis?", options: ["Memahami situasi dan tidak bising", "Marah-marah pada jiran", "Memanggil polis tanpa sebab"], answer: 0 },
+            { q: "Apakah kebaikan bersikap toleransi sesama jiran?", options: ["Mengekalkan kedamaian kejiranan", "Menyebabkan pergaduhan", "Membuat orang lain benci"], answer: 0 },
+            { q: "Apakah contoh nilai kesederhanaan semasa berinteraksi dengan jiran?", options: ["Tidak berhias atau berbelanja secara berlebihan", "Menunjuk-nunjuk kekayaan", "Sombong dengan harta"], answer: 0 },
+            { q: "Bagaimanakah sikap berterima kasih apabila jiran memberi makanan?", options: ["Menerima dengan gembira dan ucap terima kasih", "Mengkritik rasa makanan", "Buang makanan"], answer: 0 },
+            { q: "Mengapa kita patut menyapa jiran apabila bertemu?", options: ["Tanda mesra dan hormat", "Sebab nak pinjam duit", "Pura-pura mesra"], answer: 0 },
+            { q: "Apakah yang patut dilakukan jika kita tidak sengaja merosakkan barang jiran?", options: ["Meminta maaf dan bertanggungjawab", "Melarikan diri", "Menuduh orang lain"], answer: 0 },
+            { q: "Apakah nilai moral apabila kita membantu jiran tua membawa barang berat?", options: ["Baik hati", "Sombong", "Pentingkan diri"], answer: 0 },
+            { q: "Mengapa amalan hidup bersatu padu penting dalam kejiranan?", options: ["Mewujudkan suasana aman dan harmoni", "Membuat kejiranan kucar-kacir", "Supaya mudah bergaduh"], answer: 0 }
+        ];
+
+        // --- GAME VARIABLES ---
+        let canvas, ctx;
+        const gridSize = 20;
+        let tileCount = 20;
+
+        let snake = [];
+        let food = { x: 0, y: 0 };
+        let dx = gridSize, dy = 0;
+        let score = 0;
+        let lives = 3;
+        let playerName = "";
+        let gameLoopTimer = null;
+        let isPaused = false;
+        let currentQuestion = null;
+        let answeredQuestions = new Set();
+
+        // Audio Settings
+        let bgmEnabled = true;
+        let sfxEnabled = true;
+        let audioCtx = null;
+        let bgmInterval = null;
+
+        // Colors for Colorful Arcade Theme
+        const snakeColors = ['#facc15', '#4ade80', '#38bdf8', '#f472b6', '#a78bfa'];
+
+        // --- WEB AUDIO API SYNTHESIZER ---
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playSound(type) {
+            if (!sfxEnabled) return;
+            initAudio();
+            if (!audioCtx) return;
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'eat') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(800, now + 0.1);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now);
+                osc.stop(now + 0.1);
+            } else if (type === 'correct') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+                osc.frequency.setValueAtTime(783.99, now + 0.2); // G5
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.35);
+                osc.start(now);
+                osc.stop(now + 0.35);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.linearRampToValueAtTime(100, now + 0.2);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now);
+                osc.stop(now + 0.2);
+            } else if (type === 'hit') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.linearRampToValueAtTime(60, now + 0.3);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            }
+        }
+
+        // Simple BGM Loop
+        function startBGM() {
+            if (bgmInterval) clearInterval(bgmInterval);
+            const notes = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63];
+            let noteIdx = 0;
+
+            bgmInterval = setInterval(() => {
+                if (!bgmEnabled || isPaused) return;
+                initAudio();
+                if (!audioCtx) return;
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.type = 'sine';
+                osc.frequency.value = notes[noteIdx];
+                gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.25);
+
+                noteIdx = (noteIdx + 1) % notes.length;
+            }, 300);
+        }
+
+        function toggleBGM() {
+            bgmEnabled = !bgmEnabled;
+            const btn = document.getElementById('bgmBtn');
+            btn.innerHTML = bgmEnabled ? '<i class="fa-solid fa-music"></i>' : '<i class="fa-solid fa-volume-xmark text-red-400"></i>';
+        }
+
+        function toggleSFX() {
+            sfxEnabled = !sfxEnabled;
+            const btn = document.getElementById('sfxBtn');
+            btn.innerHTML = sfxEnabled ? '<i class="fa-solid fa-volume-high"></i>' : '<i class="fa-solid fa-volume-xmark text-red-400"></i>';
+        }
+
+        // --- PLAYER NAME & LEADERBOARD MANAGEMENT ---
+        function savePlayerName(e) {
+            e.preventDefault();
+            const input = document.getElementById('playerNameInput').value.trim();
+            if (!input) return;
+            playerName = input;
+            document.getElementById('displayName').innerText = playerName;
+
+            document.getElementById('nameScreen').classList.add('hidden');
+            document.getElementById('gameScreen').classList.remove('hidden');
+            document.getElementById('gameScreen').classList.add('flex');
+
+            initCanvas();
+            startGame();
+        }
+
+        function getLeaderboard() {
+            const data = localStorage.getItem('ular_moral_scores');
+            return data ? JSON.parse(data) : [];
+        }
+
+        function saveScore(name, finalScore) {
+            let scores = getLeaderboard();
+            scores.push({ name, score: finalScore, date: new Date().toLocaleDateString('ms-MY') });
+            scores.sort((a, b) => b.score - a.score);
+            scores = scores.slice(0, 5); // Keep top 5
+            localStorage.setItem('ular_moral_scores', JSON.stringify(scores));
+        }
+
+        function updateLeaderboardUI(containerId) {
+            const scores = getLeaderboard();
+            const container = document.getElementById(containerId);
+            if (scores.length === 0) {
+                container.innerHTML = `<p class="text-slate-500 text-center py-2">Tiada rekod lagi. Jadi yang pertama!</p>`;
+                return;
+            }
+            container.innerHTML = scores.map((item, index) => `
+                <div class="flex justify-between items-center bg-slate-900/60 p-2 rounded border border-slate-800">
+                    <span class="font-bold ${index === 0 ? 'text-yellow-400' : 'text-slate-300'}">
+                        ${index + 1}. ${item.name}
+                    </span>
+                    <span class="text-yellow-300 font-extrabold">${item.score} pt</span>
+                </div>
+            `).join('');
+        }
+
+        function showLeaderboardModal() {
+            updateLeaderboardUI('leaderboardModalList');
+            document.getElementById('leaderboardModal').classList.remove('hidden');
+        }
+
+        function hideLeaderboardModal() {
+            document.getElementById('leaderboardModal').classList.add('hidden');
+        }
+
+        // --- CANVAS & GAME ENGINE ---
+        function initCanvas() {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            
+            // Fixed width for grid calculation
+            canvas.width = 400;
+            canvas.height = 400;
+            tileCount = canvas.width / gridSize;
+        }
+
+        function startGame() {
+            snake = [
+                { x: 10 * gridSize, y: 10 * gridSize },
+                { x: 9 * gridSize, y: 10 * gridSize },
+                { x: 8 * gridSize, y: 10 * gridSize }
+            ];
+            dx = gridSize;
+            dy = 0;
+            score = 0;
+            lives = 3;
+            isPaused = false;
+            answeredQuestions.clear();
+
+            updateDashboard();
+            spawnFood();
+            startBGM();
+
+            if (gameLoopTimer) clearInterval(gameLoopTimer);
+            gameLoopTimer = setInterval(gameLoop, 130);
+        }
+
+        function gameLoop() {
+            if (isPaused) return;
+            moveSnake();
+            if (checkCollision()) {
+                handleCollision();
+                return;
+            }
+            drawGame();
+        }
+
+        function moveSnake() {
+            const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+            snake.unshift(head);
+
+            // Check if eating food
+            if (head.x === food.x && head.y === food.y) {
+                playSound('eat');
+                triggerQuestionModal();
+                spawnFood();
+            } else {
+                snake.pop(); // Standard snake movement
+            }
+        }
+
+        function checkCollision() {
+            const head = snake[0];
+            // Wall Collision
+            if (head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height) {
+                return true;
+            }
+            // Self Collision
+            for (let i = 1; i < snake.length; i++) {
+                if (head.x === snake[i].x && head.y === snake[i].y) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function handleCollision() {
+            playSound('hit');
+            lives--;
+            updateDashboard();
+
+            if (lives <= 0) {
+                endGame();
+            } else {
+                // Reset snake position
+                snake = [
+                    { x: 10 * gridSize, y: 10 * gridSize },
+                    { x: 9 * gridSize, y: 10 * gridSize },
+                    { x: 8 * gridSize, y: 10 * gridSize }
+                ];
+                dx = gridSize;
+                dy = 0;
+            }
+        }
+
+        function spawnFood() {
+            let valid = false;
+            while (!valid) {
+                food.x = Math.floor(Math.random() * tileCount) * gridSize;
+                food.y = Math.floor(Math.random() * tileCount) * gridSize;
+
+                valid = !snake.some(segment => segment.x === food.x && segment.y === food.y);
+            }
+        }
+
+        function drawGame() {
+            // Background Grid (Retro Arcade Pattern)
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Grid Lines
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 1;
+            for (let x = 0; x < canvas.width; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+
+            // Draw Food (Shining Star)
+            ctx.fillStyle = '#facc15';
+            ctx.shadowColor = '#facc15';
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            const cx = food.x + gridSize / 2;
+            const cy = food.y + gridSize / 2;
+            ctx.arc(cx, cy, gridSize / 2 - 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0; // reset shadow
+
+            // Draw Snake (Colorful Body)
+            snake.forEach((segment, index) => {
+                if (index === 0) {
+                    // Head
+                    ctx.fillStyle = '#22c55e';
+                    ctx.fillRect(segment.x + 1, segment.y + 1, gridSize - 2, gridSize - 2);
+                    
+                    // Eyes
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(segment.x + 4, segment.y + 4, 4, 4);
+                    ctx.fillRect(segment.x + 12, segment.y + 4, 4, 4);
+                    ctx.fillStyle = '#000000';
+                    ctx.fillRect(segment.x + 5, segment.y + 5, 2, 2);
+                    ctx.fillRect(segment.x + 13, segment.y + 5, 2, 2);
+                } else {
+                    // Body Gradient Colors
+                    const colorIndex = index % snakeColors.length;
+                    ctx.fillStyle = snakeColors[colorIndex];
+                    ctx.fillRect(segment.x + 1, segment.y + 1, gridSize - 2, gridSize - 2);
+                }
+            });
+        }
+
+        function updateDashboard() {
+            document.getElementById('scoreDisplay').innerText = score;
+            document.getElementById('livesDisplay').innerText = '❤️'.repeat(lives) || '0';
+        }
+
+        // --- QUESTION SYSTEM ---
+        function triggerQuestionModal() {
+            isPaused = true;
+
+            // Pick unasked question
+            let availableQuestions = moralQuestions.filter((_, idx) => !answeredQuestions.has(idx));
+            if (availableQuestions.length === 0) {
+                answeredQuestions.clear(); // reset if used all
+                availableQuestions = moralQuestions;
+            }
+
+            const randomIdx = Math.floor(Math.random() * availableQuestions.length);
+            currentQuestion = availableQuestions[randomIdx];
+            answeredQuestions.add(moralQuestions.indexOf(currentQuestion));
+
+            // Render Question
+            document.getElementById('questionText').innerText = currentQuestion.q;
+            const optionsContainer = document.getElementById('optionsContainer');
+            optionsContainer.innerHTML = '';
+
+            currentQuestion.options.forEach((option, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full p-3 bg-slate-800 hover:bg-slate-700 border-2 border-slate-600 rounded-xl text-left font-semibold text-slate-100 text-sm transition arcade-btn flex items-center gap-2";
+                btn.innerHTML = `<span class="w-6 h-6 rounded-full bg-cyan-500 text-slate-950 font-bold flex items-center justify-center text-xs">${String.fromCharCode(65 + idx)}</span> ${option}`;
+                btn.onclick = () => handleAnswer(idx);
+                optionsContainer.appendChild(btn);
+            });
+
+            document.getElementById('feedbackBox').classList.add('hidden');
+            document.getElementById('nextQuestionBtn').classList.add('hidden');
+            document.getElementById('questionModal').classList.remove('hidden');
+        }
+
+        function handleAnswer(selectedIndex) {
+            const feedbackBox = document.getElementById('feedbackBox');
+            const optionsBtns = document.querySelectorAll('#optionsContainer button');
+
+            // Disable all options
+            optionsBtns.forEach(btn => btn.disabled = true);
+
+            if (selectedIndex === currentQuestion.answer) {
+                playSound('correct');
+                score += 10;
+                feedbackBox.className = "p-3 rounded-xl text-sm font-bold bg-green-500/20 border-2 border-green-500 text-green-300";
+                feedbackBox.innerHTML = "✨ TAHNIAH! Jawapan Anda Tepat! (+10 Markah)";
+            } else {
+                playSound('wrong');
+                feedbackBox.className = "p-3 rounded-xl text-sm font-bold bg-red-500/20 border-2 border-red-500 text-red-300";
+                feedbackBox.innerHTML = `❌ KURANG TEPAT! Jawapan betul: <br><span class="text-yellow-300">${currentQuestion.options[currentQuestion.answer]}</span>`;
+            }
+
+            updateDashboard();
+            feedbackBox.classList.remove('hidden');
+            document.getElementById('nextQuestionBtn').classList.remove('hidden');
+        }
+
+        function resumeAfterQuestion() {
+            document.getElementById('questionModal').classList.add('hidden');
+            isPaused = false;
+        }
+
+        // --- GAME OVER & RESTART ---
+        function endGame() {
+            clearInterval(gameLoopTimer);
+            if (bgmInterval) clearInterval(bgmInterval);
+
+            saveScore(playerName, score);
+
+            document.getElementById('finalPlayerName').innerText = playerName;
+            document.getElementById('finalScore').innerText = score;
+
+            updateLeaderboardUI('leaderboardList');
+            document.getElementById('gameOverModal').classList.remove('hidden');
+        }
+
+        function restartGame() {
+            document.getElementById('gameOverModal').classList.add('hidden');
+            startGame();
+        }
+
+        function changePlayer() {
+            document.getElementById('gameOverModal').classList.add('hidden');
+            document.getElementById('gameScreen').classList.add('hidden');
+            document.getElementById('gameScreen').classList.remove('flex');
+            document.getElementById('nameScreen').classList.remove('hidden');
+            document.getElementById('playerNameInput').value = '';
+        }
+
+        function togglePause() {
+            isPaused = !isPaused;
+            const overlay = document.getElementById('pauseOverlay');
+            if (isPaused) {
+                overlay.classList.remove('hidden');
+            } else {
+                overlay.classList.add('hidden');
+            }
+        }
+
+        // --- CONTROLS LOGIC ---
+        function changeDirection(dir) {
+            if (isPaused) return;
+
+            if (dir === 'UP' && dy === 0) { dx = 0; dy = -gridSize; }
+            if (dir === 'DOWN' && dy === 0) { dx = 0; dy = gridSize; }
+            if (dir === 'LEFT' && dx === 0) { dx = -gridSize; dy = 0; }
+            if (dir === 'RIGHT' && dx === 0) { dx = gridSize; dy = 0; }
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') changeDirection('UP');
+            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') changeDirection('DOWN');
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') changeDirection('LEFT');
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') changeDirection('RIGHT');
+            if (e.key === ' ') togglePause();
+        });
+    </script>
+</body>
+</html>
